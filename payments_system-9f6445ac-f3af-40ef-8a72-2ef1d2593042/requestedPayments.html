@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Requested Payments</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            height: 100vh;
+            margin: 0;
+        }
+        .menu {
+            width: 200px;
+            background-color: #333;
+            color: white;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        .menu a {
+            color: white;
+            display: block;
+            padding: 10px 0;
+            text-decoration: none;
+        }
+        .menu a:hover {
+            background-color: #575757;
+        }
+        .content {
+            flex: 1;
+            padding: 20px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        table, th, td {
+            border: 1px solid black;
+        }
+        th, td {
+            padding: 8px;
+            text-align: left;
+        }
+        .input-container {
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="menu">
+        <h3>Menu</h3>
+        <a href="dashboard.html">Dashboard</a>
+        <a href="appointments.html">Appointments</a>
+        <a href="transactions.html">Transactions</a>
+        <a href="index.html">Logout</a>
+    </div>
+    <div class="content">
+        <h1>Requested Payments</h1>
+        <div class="input-container">
+            <label for="startdate">Start Date: </label>
+            <input type="date" id="startdate">
+            <label for="enddate">End Date: </label>
+            <input type="date" id="enddate">
+            <button onclick="loadRequestedPayments()">Get Data</button>
+        </div>
+        <table id="requestedPaymentsTable">
+            <thead>
+                <tr>
+                    <th>Patient Name</th>
+                    <th>Guarantor Name</th>
+                    <th>Appointment Date</th>
+                    <th>Transaction Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- Requested Payments will be populated here -->
+            </tbody>
+        </table>
+    </div>
+
+    <script>
+        const requestKey = sessionStorage.getItem('request_key');
+        const practiceId = sessionStorage.getItem('selected_practice');
+
+        function loadRequestedPayments() {
+            const startdate = document.getElementById('startdate').value;
+            const enddate = document.getElementById('enddate').value;
+
+            fetch(`https://qaapiv4.sikkasoft.com/v4/payment/transactions?startdate=${startdate}&enddate=${enddate}`, {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Request-Key': requestKey
+                }
+            }).then(response => {
+                if (response.status === 204) {
+                    alert('No data available for this period.');
+                } else if (response.status === 400) {
+                    alert('Bad Request');
+                }
+                return response.json();
+            }).then(data => {
+                const tbody = document.getElementById('requestedPaymentsTable').getElementsByTagName('tbody')[0];
+                tbody.innerHTML = '';
+                data.items.forEach(payment => {
+                    const row = tbody.insertRow();
+                    row.insertCell(0).textContent = payment.patient_first_name + ' ' + payment.patient_last_name;
+                    row.insertCell(1).textContent = payment.guarantor_name;
+                    row.insertCell(2).textContent = payment.appointment_date;
+                    row.insertCell(3).textContent = payment.transaction_status;
+                });
+            });
+        }
+
+        const startdate = new Date();
+        startdate.setDate(startdate.getDate() - 30);
+        const enddate = new Date();
+
+        document.getElementById('startdate').value = startdate.toISOString().split('T')[0];
+        document.getElementById('enddate').value = enddate.toISOString().split('T')[0];
+
+        loadRequestedPayments();
+    </script>
+</body>
+</html>

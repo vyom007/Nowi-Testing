@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Appointments</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            height: 100vh;
+            margin: 0;
+        }
+        .menu {
+            width: 200px;
+            background-color: #333;
+            color: white;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        .menu a {
+            color: white;
+            display: block;
+            padding: 10px 0;
+            text-decoration: none;
+        }
+        .menu a:hover {
+            background-color: #575757;
+        }
+        .content {
+            flex: 1;
+            padding: 20px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        table, th, td {
+            border: 1px solid black;
+        }
+        th, td {
+            padding: 8px;
+            text-align: left;
+        }
+        .input-container {
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="menu">
+        <h3>Menu</h3>
+        <a href="dashboard.html">Dashboard</a>
+        <a href="requestedPayments.html">Requested Payments</a>
+        <a href="transactions.html">Transactions</a>
+        <a href="index.html">Logout</a>
+    </div>
+    <div class="content">
+        <h1>Appointments</h1>
+        <div class="input-container">
+            <label for="startdate">Start Date: </label>
+            <input type="date" id="startdate">
+            <label for="enddate">End Date: </label>
+            <input type="date" id="enddate">
+        </div>
+        <table id="appointmentsTable">
+            <thead>
+                <tr>
+                    <th>Patient Name</th>
+                    <th>Guarantor Name</th>
+                    <th>Amount</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- Appointments will be populated here -->
+            </tbody>
+        </table>
+    </div>
+
+    <script>
+        const requestKey = sessionStorage.getItem('request_key');
+        const practiceId = sessionStorage.getItem('selected_practice');
+
+        function loadAppointments() {
+            const startdate = new Date();
+            startdate.setDate(startdate.getDate() - 30);
+            const enddate = new Date();
+
+            document.getElementById('startdate').value = startdate.toISOString().split('T')[0];
+            document.getElementById('enddate').value = enddate.toISOString().split('T')[0];
+
+            fetchAppointments(startdate.toISOString().split('T')[0], enddate.toISOString().split('T')[0]);
+        }
+
+        function fetchAppointments(startdate, enddate) {
+            fetch(`https://qaapiv4.sikkasoft.com/v4/appointments?startdate=${startdate}&enddate=${enddate}`, {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Request-Key': requestKey
+                }
+            }).then(response => {
+                if (response.status === 204) {
+                    alert('No data available for this period.');
+                } else if (response.status === 400) {
+                    alert('Bad Request');
+                }
+                return response.json();
+            }).then(data => {
+                const tbody = document.getElementById('appointmentsTable').getElementsByTagName('tbody')[0];
+                tbody.innerHTML = '';
+                data.items.forEach(appointment => {
+                    const row = tbody.insertRow();
+                    row.insertCell(0).textContent = appointment.patient_name;
+                    row.insertCell(1).textContent = appointment.guarantor_name;
+                    row.insertCell(2).textContent = appointment.amount;
+                    const actionCell = row.insertCell(3);
+                    const requestButton = document.createElement('button');
+                    requestButton.textContent = 'Request Payment';
+                    requestButton.onclick = () => requestPayment(appointment);
+                    actionCell.appendChild(requestButton);
+                });
+            });
+        }
+
+        function requestPayment(appointment) {
+            const transactionAmount = prompt('Enter Transaction Amount:');
+            const note = prompt('Enter Note:') + '<short_url>';
+
+            fetch('https://qaapiv4.sikkasoft.com/v4/payment/request_payment', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Request-Key': requestKey
+                },
+                body: JSON.stringify({
+                    payment_type: 'text2pay',
+                    practice_name: appointment.practice_name,
+                    provider_full_name: appointment.provider_full_name,
+                    patient_first_name: appointment.patient_name.split(' ')[0],
+                    patient_last_name: appointment.patient_name.split(' ')[1],
+                    note: note,
+                    practice_id: appointment.practice_id,
+                    patient_id: appointment.patient_id,
+                    guarantor_id: appointment.guarantor_id,
+                    provider_id: appointment.provider_id,
+                    cust_id: appointment.cust_id,
+                    transaction_amount: transactionAmount
+                })
+            }).then(response => {
+                if (response.status === 201) {
+                    alert('Payment Requested Successfully');
+                } else {
+                    alert('Failed to Request Payment');
+                }
+            });
+        }
+
+        loadAppointments();
+    </script>
+</body>
+</html>

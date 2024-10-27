@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Transactions</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            margin: 0;
+        }
+        .menu {
+            width: 200px;
+            background-color: #333;
+            color: white;
+            display: flex;
+            flex-direction: column;
+            padding: 20px;
+        }
+        .menu a {
+            color: white;
+            text-decoration: none;
+            margin-bottom: 10px;
+            padding: 10px;
+            background-color: #444;
+            border-radius: 4px;
+            text-align: center;
+        }
+        .menu a:hover {
+            background-color: #555;
+        }
+        .content {
+            flex: 1;
+            padding: 20px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        th, td {
+            padding: 10px;
+            border: 1px solid #ddd;
+            text-align: left;
+        }
+        th {
+            background-color: #f4f4f4;
+        }
+    </style>
+</head>
+<body>
+    <div class="menu">
+        <a href="appointments.html">Appointments</a>
+        <a href="requested_payments.html">Requested Payments</a>
+        <a href="transactions.html">Transactions</a>
+        <a href="dashboard.html">Dashboard</a>
+    </div>
+    <div class="content">
+        <h1>Transactions</h1>
+        <label for="startdate">Start Date:</label>
+        <input type="date" id="startdate">
+        <label for="enddate">End Date:</label>
+        <input type="date" id="enddate">
+        <button onclick="fetchTransactions()">Get Data</button>
+        <table>
+            <thead>
+                <tr>
+                    <th>Transaction Date</th>
+                    <th>Transaction Amount</th>
+                    <th>Patient ID</th>
+                </tr>
+            </thead>
+            <tbody id="transactionsTableBody">
+                <!-- Data will be populated here -->
+            </tbody>
+        </table>
+    </div>
+
+    <script>
+        const request_key = localStorage.getItem('request_key');
+        const practice_id = localStorage.getItem('practice_id');
+        const today = new Date().toISOString().split('T')[0];
+        const thirtyDaysAgo = new Date();
+        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+        const defaultStartDate = thirtyDaysAgo.toISOString().split('T')[0];
+
+        document.getElementById('startdate').value = defaultStartDate;
+        document.getElementById('enddate').value = today;
+
+        function fetchTransactions() {
+            const startdate = document.getElementById('startdate').value;
+            const enddate = document.getElementById('enddate').value;
+
+            fetch(`https://qaapiv4.sikkasoft.com/v4/payment/transactions?startdate=${startdate}&enddate=${enddate}&practice_id=${practice_id}`, {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Request-Key': request_key
+                }
+            })
+            .then(response => {
+                if (response.status === 204) {
+                    alert('Data is not available for this period.');
+                    return [];
+                }
+                if (response.status === 400) {
+                    alert('Bad Request');
+                    return [];
+                }
+                return response.json();
+            })
+            .then(data => {
+                const tableBody = document.getElementById('transactionsTableBody');
+                tableBody.innerHTML = '';
+                data.items.forEach(item => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${item.transaction_date}</td>
+                        <td>${item.transaction_amount}</td>
+                        <td>${item.patient_id}</td>
+                    `;
+                    tableBody.appendChild(row);
+                });
+            })
+            .catch(error => console.error('Error:', error));
+        }
+
+        // Initial load
+        fetchTransactions();
+    </script>
+</body>
+</html>

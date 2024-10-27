@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Appointments</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+        }
+        .menu {
+            width: 200px;
+            background-color: #333;
+            color: #fff;
+            height: 100vh;
+            padding: 20px;
+            box-sizing: border-box;
+            position: fixed;
+        }
+        .menu a {
+            color: #fff;
+            text-decoration: none;
+            display: block;
+            padding: 10px 0;
+        }
+        .menu a:hover {
+            background-color: #575757;
+        }
+        .content {
+            margin-left: 220px;
+            padding: 20px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        table, th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+        button {
+            padding: 5px 10px;
+            background-color: #28a745;
+            color: #fff;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #218838;
+        }
+    </style>
+</head>
+<body>
+    <div class="menu">
+        <a href="appointments.html">Appointments</a>
+        <a href="requestedPayments.html">Requested Payments</a>
+        <a href="transactions.html">Past Transactions</a>
+        <a href="#" onclick="logout()">Logout</a>
+    </div>
+    <div class="content">
+        <h2>Appointments</h2>
+        <label for="startdate">Start Date:</label>
+        <input type="date" id="startdate">
+        <label for="enddate">End Date:</label>
+        <input type="date" id="enddate">
+        <table id="appointmentsTable">
+            <thead>
+                <tr>
+                    <th>Practice ID</th>
+                    <th>Patient Name</th>
+                    <th>Guarantor Name</th>
+                    <th>Amount</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- Data will be populated here -->
+            </tbody>
+        </table>
+    </div>
+    <script>
+        const request_key = sessionStorage.getItem('request_key');
+        const practice_id = sessionStorage.getItem('selectedPractice');
+
+        function fetchAppointments() {
+            const startdate = document.getElementById('startdate').value;
+            const enddate = document.getElementById('enddate').value;
+
+            fetch(`https://qaapiv4.sikkasoft.com/v4/appointments?startdate=${startdate}&enddate=${enddate}&practice_id=${practice_id}`, {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Request-Key': request_key
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                const tableBody = document.getElementById('appointmentsTable').querySelector('tbody');
+                tableBody.innerHTML = '';
+                data.items.forEach(appointment => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${appointment.practice_id}</td>
+                        <td>${appointment.patient_name}</td>
+                        <td>${appointment.guarantor_name}</td>
+                        <td>${appointment.amount}</td>
+                        <td><button onclick="requestPayment('${appointment.patient_name}', ${appointment.amount})">Request Payment</button></td>
+                    `;
+                    tableBody.appendChild(row);
+                });
+            })
+            .catch(error => console.error('Error:', error));
+        }
+
+        function requestPayment(patientName, amount) {
+            const [firstName, lastName] = patientName.split(' ');
+            const note = prompt('Enter a note for the payment:');
+            const transactionAmount = prompt('Enter the transaction amount:');
+
+            fetch('https://qaapiv4.sikkasoft.com/v4/payment/request_payment', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Request-Key': request_key
+                },
+                body: JSON.stringify({
+                    payment_type: 'text2pay',
+                    practice_name: 'practice_name', // Replace with actual data
+                    provider_full_name: 'provider_full_name', // Replace with actual data
+                    patient_first_name: firstName,
+                    patient_last_name: lastName,
+                    note: `${note} <short_url>`,
+                    practice_id: practice_id,
+                    patient_id: 'patient_id', // Replace with actual data
+                    guarantor_id: 'guarantor_id', // Replace with actual data
+                    provider_id: 'provider_id', // Replace with actual data
+                    cust_id: 'cust_id', // Replace with actual data
+                    transaction_amount: transactionAmount
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.http_code === '201') {
+                    alert('Payment request created successfully');
+                } else {
+                    alert('Failed to create payment request');
+                }
+            })
+            .catch(error => console.error('Error:', error));
+        }
+
+        function logout() {
+            sessionStorage.clear();
+            window.location.href = 'index.html';
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const today = new Date().toISOString().split('T')[0];
+            const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+            document.getElementById('enddate').value = today;
+            document.getElementById('startdate').value = thirtyDaysAgo;
+            fetchAppointments();
+        });
+    </script>
+</body>
+</html>

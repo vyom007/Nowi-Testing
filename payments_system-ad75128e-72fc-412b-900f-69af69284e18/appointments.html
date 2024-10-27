@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Appointments</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f3f0ff;
+            margin: 0;
+            padding: 20px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 10px;
+            text-align: left;
+        }
+        th {
+            background-color: #6a0dad;
+            color: #fff;
+        }
+        button {
+            background-color: #6a0dad;
+            color: #fff;
+            border: none;
+            padding: 5px 10px;
+            cursor: pointer;
+            border-radius: 4px;
+        }
+        button:hover {
+            background-color: #5a0cad;
+        }
+        .date-input {
+            margin-right: 10px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Appointments</h1>
+    <input type="date" id="startdate" class="date-input">
+    <input type="date" id="enddate" class="date-input">
+    <button onclick="loadAppointments()">Get Data</button>
+
+    <table id="appointmentsTable">
+        <thead>
+            <tr>
+                <th>Patient Name</th>
+                <th>Guarantor Name</th>
+                <th>Amount</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            <!-- Data will be populated by JavaScript -->
+        </tbody>
+    </table>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const today = new Date();
+            const priorDate = new Date().setDate(today.getDate() - 30);
+            document.getElementById('startdate').valueAsDate = new Date(priorDate);
+            document.getElementById('enddate').valueAsDate = today;
+            loadAppointments();
+        });
+
+        function loadAppointments() {
+            const request_key = sessionStorage.getItem('request_key');
+            const practice_id = sessionStorage.getItem('selected_practice');
+            const startdate = document.getElementById('startdate').value;
+            const enddate = document.getElementById('enddate').value;
+
+            fetch(`https://qaapiv4.sikkasoft.com/v4/appointments?startdate=${startdate}&enddate=${enddate}`, {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Request-Key': request_key
+                }
+            })
+            .then(response => {
+                if (response.status === 204) {
+                    alert('Data is not available for this period.');
+                    return [];
+                }
+                if (response.status === 400) {
+                    alert('Bad Request');
+                    return [];
+                }
+                return response.json();
+            })
+            .then(data => {
+                const tableBody = document.getElementById('appointmentsTable').querySelector('tbody');
+                tableBody.innerHTML = '';
+                data.items.forEach(item => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${item.patient_name}</td>
+                        <td>${item.guarantor_name}</td>
+                        <td>${item.amount}</td>
+                        <td><button onclick="requestPayment('${item.patient_name}', '${item.guarantor_id}', '${item.provider_id}', '${item.practice_id}', '${item.cust_id}', '${item.patient_id}')">Request Payment</button></td>
+                    `;
+                    tableBody.appendChild(row);
+                });
+            })
+            .catch(error => console.error('Error:', error));
+        }
+
+        function requestPayment(patientName, guarantorId, providerId, practiceId, custId, patientId) {
+            const transactionAmount = prompt('Enter transaction amount:');
+            const note = prompt('Enter note:');
+            const [firstName, ...lastNameParts] = patientName.split(' ');
+            const lastName = lastNameParts.join(' ');
+
+            fetch('https://qaapiv4.sikkasoft.com/v4/payment/request_payment', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Request-Key': sessionStorage.getItem('request_key')
+                },
+                body: JSON.stringify({
+                    payment_type: 'text2pay',
+                    practice_name: practiceId, // Assuming practice name is same as ID for simplicity
+                    provider_full_name: providerId, // Assuming provider name is same as ID for simplicity
+                    patient_first_name: firstName,
+                    patient_last_name: lastName,
+                    note: note + ' <short_url>',
+                    practice_id: practiceId,
+                    patient_id: patientId,
+                    guarantor_id: guarantorId,
+                    provider_id: providerId,
+                    cust_id: custId,
+                    transaction_amount: transactionAmount
+                })
+            })
+            .then(response => {
+                if (response.status === 201) {
+                    alert('Payment request created successfully.');
+                } else {
+                    alert('Failed to create payment request.');
+                }
+            })
+            .catch(error => console.error('Error:', error));
+        }
+    </script>
+</body>
+</html>

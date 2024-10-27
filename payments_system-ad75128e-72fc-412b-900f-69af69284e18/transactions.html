@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Past Transactions</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f3f0ff;
+            margin: 0;
+            padding: 20px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 10px;
+            text-align: left;
+        }
+        th {
+            background-color: #6a0dad;
+            color: #fff;
+        }
+        .date-input {
+            margin-right: 10px;
+        }
+        button {
+            background-color: #6a0dad;
+            color: #fff;
+            border: none;
+            padding: 5px 10px;
+            cursor: pointer;
+            border-radius: 4px;
+        }
+        button:hover {
+            background-color: #5a0cad;
+        }
+    </style>
+</head>
+<body>
+    <h1>Past Transactions</h1>
+    <input type="date" id="startdate" class="date-input">
+    <input type="date" id="enddate" class="date-input">
+    <button onclick="loadTransactions()">Get Data</button>
+
+    <table id="transactionsTable">
+        <thead>
+            <tr>
+                <th>Transaction Date</th>
+                <th>Transaction Amount</th>
+                <th>Patient ID</th>
+            </tr>
+        </thead>
+        <tbody>
+            <!-- Data will be populated by JavaScript -->
+        </tbody>
+    </table>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const today = new Date();
+            const priorDate = new Date().setDate(today.getDate() - 30);
+            document.getElementById('startdate').valueAsDate = new Date(priorDate);
+            document.getElementById('enddate').valueAsDate = today;
+            loadTransactions();
+        });
+
+        function loadTransactions() {
+            const request_key = sessionStorage.getItem('request_key');
+            const practice_id = sessionStorage.getItem('selected_practice');
+            const startdate = document.getElementById('startdate').value;
+            const enddate = document.getElementById('enddate').value;
+
+            fetch(`https://qaapiv4.sikkasoft.com/v4/payment/transactions`, {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Request-Key': request_key
+                }
+            })
+            .then(response => {
+                if (response.status === 204) {
+                    alert('Data is not available for this period.');
+                    return [];
+                }
+                if (response.status === 400) {
+                    alert('Bad Request');
+                    return [];
+                }
+                return response.json();
+            })
+            .then(data => {
+                const tableBody = document.getElementById('transactionsTable').querySelector('tbody');
+                tableBody.innerHTML = '';
+                data.items.forEach(item => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${item.transaction_date}</td>
+                        <td>${item.transaction_amount}</td>
+                        <td>${item.patient_id}</td>
+                    `;
+                    tableBody.appendChild(row);
+                });
+            })
+            .catch(error => console.error('Error:', error));
+        }
+    </script>
+</body>
+</html>

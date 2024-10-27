@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Select Practice</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f3f0ff;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        .practice-container {
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.1);
+            width: 400px;
+        }
+        h2 {
+            color: #6a0dad;
+            text-align: center;
+        }
+        select {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        button {
+            width: 100%;
+            padding: 10px;
+            background-color: #6a0dad;
+            color: #fff;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #5a0cad;
+        }
+    </style>
+</head>
+<body>
+    <div class="practice-container">
+        <h2>Select Practice</h2>
+        <select id="practiceSelect">
+            <!-- Options will be populated by JavaScript -->
+        </select>
+        <button onclick="selectPractice()">Select</button>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const request_key = sessionStorage.getItem('request_key');
+            fetch('https://api.sikkasoft.com/v4/practices', {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Request-Key': request_key
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                const practiceSelect = document.getElementById('practiceSelect');
+                data.items.forEach(item => {
+                    const option = document.createElement('option');
+                    option.value = item.practice_id;
+                    option.textContent = item.name;
+                    practiceSelect.appendChild(option);
+                });
+            })
+            .catch(error => console.error('Error:', error));
+        });
+
+        function selectPractice() {
+            const practiceSelect = document.getElementById('practiceSelect');
+            const selectedPractice = practiceSelect.value;
+            sessionStorage.setItem('selected_practice', selectedPractice);
+            window.location.href = 'dashboard.html';
+        }
+    </script>
+</body>
+</html>

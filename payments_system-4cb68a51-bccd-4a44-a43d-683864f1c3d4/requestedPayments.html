@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Requested Payments - Sikka Payment</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            margin: 0;
+            height: 100vh;
+            background-color: #f4f4f9;
+        }
+        .sidebar {
+            width: 200px;
+            background-color: #333;
+            color: #fff;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding-top: 20px;
+        }
+        .sidebar a {
+            color: #fff;
+            text-decoration: none;
+            margin: 10px 0;
+            padding: 10px;
+            width: 100%;
+            text-align: center;
+            background-color: #444;
+            border-radius: 4px;
+        }
+        .sidebar a:hover {
+            background-color: #555;
+        }
+        .content {
+            flex-grow: 1;
+            padding: 20px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        table, th, td {
+            border: 1px solid #ddd;
+        }
+        th, td {
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+    </style>
+</head>
+<body>
+    <div class="sidebar">
+        <a href="dashboard.html">Dashboard</a>
+        <a href="appointments.html">Appointments</a>
+        <a href="transactions.html">Past Transactions</a>
+        <a href="login.html">Logout</a>
+    </div>
+    <div class="content">
+        <h1>Requested Payments</h1>
+        <label for="startdate">Start Date:</label>
+        <input type="date" id="startdate" value="2024-07-09">
+        <label for="enddate">End Date:</label>
+        <input type="date" id="enddate" value="2024-10-26">
+        <button onclick="loadRequestedPayments()">Get Data</button>
+        <table id="requestedPaymentsTable">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Practice ID</th>
+                    <th>Patient Name</th>
+                    <th>Guarantor Name</th>
+                    <th>Appointment Date</th>
+                    <th>Transaction Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- Data will be inserted here -->
+            </tbody>
+        </table>
+    </div>
+
+    <script>
+        const request_key = sessionStorage.getItem('request_key');
+        const selected_practice = sessionStorage.getItem('selected_practice');
+
+        function loadRequestedPayments() {
+            const startdate = document.getElementById('startdate').value;
+            const enddate = document.getElementById('enddate').value;
+
+            fetch(`https://qaapiv4.sikkasoft.com/v4/payment/transactions?startdate=${startdate}&enddate=${enddate}&practice_id=${selected_practice}`, {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Request-Key': request_key
+                }
+            })
+            .then(response => {
+                if (response.status === 204) {
+                    alert('Data is not available for this period.');
+                    return;
+                }
+                if (response.status === 400) {
+                    alert('Bad Request');
+                    return;
+                }
+                return response.json();
+            })
+            .then(data => {
+                const tableBody = document.getElementById('requestedPaymentsTable').getElementsByTagName('tbody')[0];
+                tableBody.innerHTML = '';
+                data.items.forEach(item => {
+                    const row = tableBody.insertRow();
+                    row.insertCell(0).textContent = item.id;
+                    row.insertCell(1).textContent = item.practice_id;
+                    row.insertCell(2).textContent = item.patient_name;
+                    row.insertCell(3).textContent = item.guarantor_name;
+                    row.insertCell(4).textContent = item.appointment_date;
+                    row.insertCell(5).textContent = item.transaction_status;
+                });
+            })
+            .catch(error => console.error('Error:', error));
+        }
+
+        document.addEventListener('DOMContentLoaded', loadRequestedPayments);
+    </script>
+</body>
+</html>

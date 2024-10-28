@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard</title>
+    <style>
+        body {font-family: Arial, sans-serif; background-color: #f4f4f4;}
+        .dashboard-container {display: flex;}
+        .menu {width: 200px; background-color: #333; color: white; padding: 15px;}
+        .menu a {color: white; text-decoration: none; display: block; padding: 10px 0;}
+        .menu a:hover {background-color: #444;}
+        .content {flex-grow: 1; padding: 20px;}
+        .card {background-color: #fff; border-radius: 8px; box-shadow: 0 0 10px rgba(0, 0, 0, 0.1); padding: 20px; margin-bottom: 20px;}
+        .date-inputs {margin-bottom: 20px;}
+        .date-inputs input {margin-right: 10px;}
+    </style>
+</head>
+<body>
+    <div class="dashboard-container">
+        <div class="menu">
+            <a href="Dashboard.html">Dashboard</a>
+            <a href="PatientManagement.html">Patient Management</a>
+            <a href="AppointmentandSchedulingManagement.html">Appointment and Scheduling Management</a>
+            <a href="ClinicalPerformanceMetrics.html">Clinical Performance Metrics</a>
+            <a href="#" onclick="logout()">Logout</a>
+        </div>
+        <div class="content">
+            <h2>Dashboard</h2>
+            <div class="date-inputs">
+                <input type="date" id="startdate" value="">
+                <input type="date" id="enddate" value="">
+                <button onclick="getData()">Get Data</button>
+            </div>
+            <div id="total-production" class="card"></div>
+            <div id="adjusted-production-dentist" class="card"></div>
+            <div id="adjusted-production-hygienist" class="card"></div>
+            <div id="total-collection" class="card"></div>
+        </div>
+    </div>
+
+    <script>
+        function setDefaultDates() {
+            const endDate = new Date().toISOString().split('T')[0];
+            const startDate = new Date(new Date().setDate(new Date().getDate() - 30)).toISOString().split('T')[0];
+            document.getElementById('startdate').value = startDate;
+            document.getElementById('enddate').value = endDate;
+        }
+
+        function getData() {
+            const requestKey = sessionStorage.getItem('request_key');
+            const practiceId = sessionStorage.getItem('practice_id');
+            const startDate = document.getElementById('startdate').value;
+            const endDate = document.getElementById('enddate').value;
+
+            fetch(`https://api.sikkasoft.com/v4/kpis/total_production?startdate=${startDate}&enddate=${endDate}&practice_id=${practiceId}`, {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Request-Key': requestKey
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.items.length > 0) {
+                    document.getElementById('total-production').innerText = `Total Production: ${data.items[0].total_production}`;
+                } else {
+                    document.getElementById('total-production').innerText = 'Data is not available for this.';
+                }
+            })
+            .catch(error => console.error('Error fetching total production:', error));
+
+            fetch(`https://api.sikkasoft.com/v4/kpis/adjusted_production_by_dentist?startdate=${startDate}&enddate=${endDate}&practice_id=${practiceId}`, {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Request-Key': requestKey
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.items.length > 0) {
+                    document.getElementById('adjusted-production-dentist').innerText = `Adjusted Production by Dentist: ${data.items[0].adjusted_production}`;
+                } else {
+                    document.getElementById('adjusted-production-dentist').innerText = 'Data is not available for this.';
+                }
+            })
+            .catch(error => console.error('Error fetching adjusted production by dentist:', error));
+
+            fetch(`https://api.sikkasoft.com/v4/kpis/adjusted_production_by_hygienist?startdate=${startDate}&enddate=${endDate}&practice_id=${practiceId}`, {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Request-Key': requestKey
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.items.length > 0) {
+                    document.getElementById('adjusted-production-hygienist').innerText = `Adjusted Production by Hygienist: ${data.items[0].adjusted_production}`;
+                } else {
+                    document.getElementById('adjusted-production-hygienist').innerText = 'Data is not available for this.';
+                }
+            })
+            .catch(error => console.error('Error fetching adjusted production by hygienist:', error));
+
+            fetch(`https://api.sikkasoft.com/v4/kpis/total_collection?startdate=${startDate}&enddate=${endDate}&practice_id=${practiceId}`, {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Request-Key': requestKey
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.items.length > 0) {
+                    document.getElementById('total-collection').innerText = `Total Collection: ${Math.abs(data.items[0].total_collection)}`;
+                } else {
+                    document.getElementById('total-collection').innerText = 'Data is not available for this.';
+                }
+            })
+            .catch(error => console.error('Error fetching total collection:', error));
+        }
+
+        function logout() {
+            sessionStorage.clear();
+            window.location.href = 'login.html';
+        }
+
+        window.onload = function() {
+            setDefaultDates();
+            getData();
+        };
+    </script>
+</body>
+</html>

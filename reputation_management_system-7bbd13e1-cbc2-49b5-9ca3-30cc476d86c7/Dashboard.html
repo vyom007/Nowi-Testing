@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard</title>
+    <style>
+        body {
+            display: flex;
+            font-family: Arial, sans-serif;
+            margin: 0;
+            height: 100vh;
+        }
+        .menu {
+            width: 200px;
+            background-color: #2c3e50;
+            color: white;
+            display: flex;
+            flex-direction: column;
+            padding: 20px;
+        }
+        .menu a {
+            color: white;
+            text-decoration: none;
+            margin-bottom: 20px;
+        }
+        .menu a:hover {
+            text-decoration: underline;
+        }
+        .content {
+            flex-grow: 1;
+            padding: 20px;
+            background-color: #ecf0f1;
+        }
+        .card {
+            background-color: white;
+            padding: 20px;
+            margin-bottom: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+    </style>
+</head>
+<body>
+    <div class="menu">
+        <a href="Dashboard.html">Dashboard</a>
+        <a href="PatientManagement.html">Patient Management</a>
+        <a href="AppointmentandSchedulingManagement.html">Appointment & Scheduling</a>
+        <a href="ClinicalPerformanceMetrics.html">Clinical Performance</a>
+        <a href="Login.html">Logout</a>
+    </div>
+    <div class="content">
+        <h1>Dashboard</h1>
+        <div class="card" id="total-production">Total Production: Loading...</div>
+        <div class="card" id="adjusted-production-dentist">Adjusted Production by Dentist: Loading...</div>
+        <div class="card" id="adjusted-production-hygienist">Adjusted Production by Hygienist: Loading...</div>
+        <div class="card" id="total-collection">Total Collection: Loading...</div>
+    </div>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            var request_key = sessionStorage.getItem('request_key');
+            var practice_id = sessionStorage.getItem('selected_practice_id');
+            var today = new Date();
+            var enddate = today.toISOString().split('T')[0];
+            var startdate = new Date(today.setDate(today.getDate() - 30)).toISOString().split('T')[0];
+
+            function fetchData(url, elementId) {
+                fetch(url, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Request-Key': request_key
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.items && data.items.length > 0) {
+                        document.getElementById(elementId).textContent = data.items[0].total_production || data.items[0].adjusted_production || Math.abs(data.items[0].total_collection);
+                    } else {
+                        document.getElementById(elementId).textContent = "Data not available.";
+                    }
+                })
+                .catch(error => {
+                    document.getElementById(elementId).textContent = "Error fetching data.";
+                });
+            }
+
+            fetchData(`https://api.sikkasoft.com/v4/kpis/total_production?startdate=${startdate}&enddate=${enddate}&practice_id=${practice_id}`, 'total-production');
+            fetchData(`https://api.sikkasoft.com/v4/kpis/adjusted_production_by_dentist?startdate=${startdate}&enddate=${enddate}&practice_id=${practice_id}`, 'adjusted-production-dentist');
+            fetchData(`https://api.sikkasoft.com/v4/kpis/adjusted_production_by_hygienist?startdate=${startdate}&enddate=${enddate}&practice_id=${practice_id}`, 'adjusted-production-hygienist');
+            fetchData(`https://api.sikkasoft.com/v4/kpis/total_collection?startdate=${startdate}&enddate=${enddate}&practice_id=${practice_id}`, 'total-collection');
+        });
+    </script>
+</body>
+</html>

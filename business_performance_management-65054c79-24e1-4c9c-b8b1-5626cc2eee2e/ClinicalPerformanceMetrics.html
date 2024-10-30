@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Clinical Performance Metrics</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+        }
+        .sidebar {
+            width: 200px;
+            background-color: #333;
+            color: #fff;
+            height: 100vh;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        .sidebar a {
+            color: #fff;
+            text-decoration: none;
+            display: block;
+            margin-bottom: 20px;
+        }
+        .content {
+            padding: 20px;
+            margin-left: 20px;
+            width: 100%;
+        }
+        .card, table {
+            background-color: #f4f4f9;
+            width: 100%;
+            margin-bottom: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+        }
+        table th, table td {
+            padding: 10px;
+            border-bottom: 1px solid #ddd;
+        }
+    </style>
+</head>
+<body>
+    <div class="sidebar">
+        <a href="Dashboard.html">Dashboard</a>
+        <a href="PatientManagement.html">Patient Management</a>
+        <a href="AppointmentandSchedulingManagement.html">Appointment and Scheduling Management</a>
+        <a href="ClinicalPerformanceMetrics.html">Clinical Performance Metrics</a>
+        <a href="Login.html" onclick="logout()">Logout</a>
+    </div>
+
+    <div class="content">
+        <h2>Clinical Performance Metrics</h2>
+        <table id="totalProductionByProviderCategory">
+            <thead>
+                <tr>
+                    <th>Category</th>
+                    <th>Total Production</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+        <div class="card">
+            <h3>Total Production Per Hour By Provider</h3>
+            <p id="productionPerHour"></p>
+        </div>
+    </div>
+
+    <script>
+        const requestKey = sessionStorage.getItem('request_key');
+        const practiceId = sessionStorage.getItem('selected_practice');
+
+        window.onload = function() {
+            loadPerformanceMetricsData();
+        };
+
+        function loadPerformanceMetricsData() {
+            const today = new Date();
+            const endDate = today.toISOString().split('T')[0];
+            const startDate = new Date(today.setDate(today.getDate() - 30)).toISOString().split('T')[0];
+
+            fetch(`https://api.sikkasoft.com/v4/kpis/total_production_by_provider_category?startdate=${startDate}&enddate=${endDate}&practice_id=${practiceId}`, {
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Request-Key': requestKey
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                const tbody = document.getElementById('totalProductionByProviderCategory').querySelector('tbody');
+                if (data.items && data.items.length > 0) {
+                    data.items.forEach(item => {
+                        const row = `<tr>
+                                        <td>${item.category}</td>
+                                        <td>${item.total_production}</td>
+                                    </tr>`;
+                        tbody.innerHTML += row;
+                    });
+                } else {
+                    tbody.innerHTML = '<tr><td colspan="2">No data available</td></tr>';
+                }
+            })
+            .catch(error => console.error('Error:', error));
+
+            // Fetch call for Total Production Per Hour By Provider...
+        }
+
+        function logout() {
+            sessionStorage.clear();
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Appointment and Scheduling</title>
+    <style>
+        body { font-family: Arial, sans-serif; }
+        .sidebar { position: fixed; left: 0; top: 0; width: 200px; height: 100%; background: #333; color: #FFF; padding: 15px; box-shadow: 3px 0 5px rgba(0,0,0,0.1); }
+        .sidebar a { color: #FFF; text-decoration: none; display: block; margin: 10px 0; }
+        .main-content { margin-left: 220px; padding: 20px; }
+        table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+        th, td { border: 1px solid #ddd; padding: 8px; }
+        th { background: #f2f2f2; }
+        input[type="date"] { margin: 0 10px; padding: 5px; }
+    </style>
+</head>
+<body>
+<div class="sidebar">
+    <a href="Dashboard.html">Dashboard</a>
+    <a href="PatientManagement.html">Patient Management</a>
+    <a href="AppointmentandSchedulingManagement.html">Appointment & Scheduling</a>
+    <a href="ClinicalPerformanceMetrics.html">Clinical Performance</a>
+    <a href="Login.html" onclick="logout()">Logout</a>
+</div>
+<div class="main-content">
+    <h2>Appointment & Scheduling Management</h2>
+    <label for="startdate">Start Date:</label>
+    <input type="date" id="startdate">
+    <label for="enddate">End Date:</label>
+    <input type="date" id="enddate">
+    <button onclick="getAppointmentData()">Get Data</button>
+    <div id="appointmentData"></div>
+</div>
+
+<script>
+function formatDate(date) {
+    const d = new Date(date);
+    return d.toISOString().split('T')[0];
+}
+
+function loadAppointmentData() {
+    let startDate = new Date();
+    startDate.setDate(startDate.getDate() - 30);
+    let endDate = new Date();
+    document.getElementById('startdate').value = formatDate(startDate);
+    document.getElementById('enddate').value = formatDate(endDate);
+    getAppointmentData();
+}
+
+function getAppointmentData() {
+    var startdate = document.getElementById('startdate').value;
+    var enddate = document.getElementById('enddate').value;
+    var practice_id = localStorage.getItem('practice_id');
+    let appointmentData = document.getElementById('appointmentData');
+
+    const urls = [
+        `https://api.sikkasoft.com/v4/kpis/new_patients_first_visit_without_future_appointments_details?startdate=${startdate}&enddate=${enddate}&practice_id=${practice_id}`,
+        `https://api.sikkasoft.com/v4/kpis/patients_visits_without_future_appointments_details?startdate=${startdate}&enddate=${enddate}&practice_id=${practice_id}`
+    ];
+
+    Promise.all(urls.map(url => fetch(url, {
+        method: 'GET',
+        headers: {
+            'Content-Type': 'application/json',
+            'Request-Key': localStorage.getItem('request_key')
+        }
+    }).then(response => {
+        if (response.status === 204) return 'Data unavailable';
+        if (response.status === 400) return 'Bad Request';
+        return response.json();
+    })))
+    .then(results => {
+        const newPatientDetails = Array.isArray(results[0].items) ? results[0].items : [];
+        const allPatientDetails = Array.isArray(results[1].items) ? results[1].items : [];
+
+        appointmentData.innerHTML = `
+            <div>
+                <h3>New Patients Visited Without Future Appointments</h3>
+                <table>
+                    <tr><th>First Name</th><th>Last Name</th><th>Address</th><th>City</th><th>Email</th><th>First Visit</th></tr>
+                    ${newPatientDetails.map(p => `<tr><td>${p.firstname}</td><td>${p.lastname}</td><td>${p.address_line1}</td><td>${p.city}</td><td>${p.email}</td><td>${p.first_visit}</td></tr>`).join('')}
+                </table>
+            </div>
+            <div>
+                <h3>Patients Visited Without Future Appointments</h3>
+                <table>
+                    <tr><th>First Name</th><th>Last Name</th><th>Address</th><th>City</th><th>Email</th><th>Procedure Date</th></tr>
+                    ${allPatientDetails.map(p => `<tr><td>${p.firstname}</td><td>${p.lastname}</td><td>${p.address_line1}</td><td>${p.city}</td><td>${p.email}</td><td>${p.procedure_date}</td></tr>`).join('')}
+                </table>
+            </div>
+        `;
+    })
+    .catch(error => console.error('Error:', error));
+}
+
+function logout() {
+    localStorage.removeItem('request_key');
+    localStorage.removeItem('practice_id');
+}
+
+document.addEventListener('DOMContentLoaded', loadAppointmentData);
+</script>
+
+</body>
+</html>

@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Select Practice</title>
+    <style>
+        body { font-family: Arial, sans-serif; background-color: #f9f9f9; padding: 30px; }
+        .practice-list { max-width: 500px; margin: 0 auto; background-color: #fff; border-radius: 5px; box-shadow: 0 0 10px rgba(0, 0, 0, 0.1); padding: 20px; }
+        h2 { text-align: center; }
+        button { display: block; width: 100%; padding: 10px; margin-top: 10px; border: none; border-radius: 5px; background-color: #4caf50; color: white; font-size: 16px; }
+    </style>
+</head>
+<body>
+<div class="practice-list">
+    <h2>Select Practice</h2>
+    <div id="practices"></div>
+</div>
+
+<script>
+function getPractices() {
+    var request_key = localStorage.getItem('request_key');
+    fetch('https://api.sikkasoft.com/v4/practices', {
+        method: 'GET',
+        headers: {
+            'Content-Type': 'application/json',
+            'Request-Key': request_key
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        var practicesContainer = document.getElementById('practices');
+        data.items.forEach(practice => {
+            var button = document.createElement('button');
+            button.innerText = practice.name;
+            button.onclick = function() {
+                localStorage.setItem('practice_id', practice.practice_id);
+                window.location.href = 'Dashboard.html';
+            };
+            practicesContainer.appendChild(button);
+        });
+    })
+    .catch(error => console.error('Error:', error));
+}
+
+document.addEventListener('DOMContentLoaded', getPractices);
+</script>
+
+</body>
+</html>

@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: row; 
+            justify-content: flex-start;
+            height: 100vh;
+            margin: 0;
+            background-color: #eaeef3;
+        }
+        .menu {
+            width: 200px;
+            background-color: #3b3b3b;
+            color: white;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+        }
+        .menu a {
+            color: white;
+            text-decoration: none;
+            margin-bottom: 10px;
+            font-size: 16px;
+        }
+        .menu a:hover {
+            text-decoration: underline;
+        }
+        .content {
+            flex-grow: 1;
+            padding: 20px;
+        }
+        .dashboard-item {
+            background-color: white;
+            border-radius: 5px;
+            padding: 10px;
+            margin-bottom: 10px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        .date-input {
+            padding: 5px;
+            margin-right: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="menu">
+        <a href="Dashboard.html">Dashboard</a>
+        <a href="PatientManagement.html">Patient Management</a>
+        <a href="AppointmentandSchedulingManagement.html">Appointment Management</a>
+        <a href="ClinicalPerformanceMetrics.html">Clinical Metrics</a>
+        <a href="#" onclick="logout()">Logout</a>
+    </div>
+    <div class="content">
+        <h2>Dashboard</h2>
+        <input type="date" id="startdate" class="date-input">
+        <input type="date" id="enddate" class="date-input">
+        <button onclick="getData()">Get Data</button>
+        <div id="dashboardDisplay"></div>
+    </div>
+    <script>
+        const requestKey = sessionStorage.getItem('requestKey');
+        const practiceId = sessionStorage.getItem('selectedPracticeId');
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const startDate = new Date();
+            startDate.setDate(startDate.getDate() - 30);
+            document.getElementById('startdate').value = startDate.toISOString().slice(0, 10);
+            document.getElementById('enddate').value = new Date().toISOString().slice(0, 10);
+            getData();
+        });
+
+        async function getData() {
+            const startdate = document.getElementById('startdate').value;
+            const enddate = document.getElementById('enddate').value;
+            const dashboardDisplay = document.getElementById('dashboardDisplay');
+            dashboardDisplay.innerHTML = '';
+
+            try {
+                const productionResponse = await fetch(`https://api.sikkasoft.com/v4/kpis/total_production?startdate=${startdate}&enddate=${enddate}&practice_id=${practiceId}`, {
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Request-Key': requestKey
+                    }
+                });
+                if (productionResponse.ok) {
+                    const productionData = await productionResponse.json();
+                    if (productionData.items && productionData.items.length > 0) {
+                        const productionItem = productionData.items[0];
+                        dashboardDisplay.innerHTML += `<div class="dashboard-item">Total Production: ${productionItem.total_production} at ${productionItem.practice_name}</div>`;
+                    } else {
+                        dashboardDisplay.innerHTML += 'No data available for Total Production';
+                    }
+                } else {
+                    dashboardDisplay.innerHTML = 'Failed to retrieve Total Production';
+                }
+
+                // Fetch Adjusted Production by Dentist
+                const adjustedProductionDentistResponse = await fetch(`https://api.sikkasoft.com/v4/kpis/adjusted_production_by_dentist?startdate=${startdate}&enddate=${enddate}&practice_id=${practiceId}`, {
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Request-Key': requestKey
+                    }
+                });
+                if (adjustedProductionDentistResponse.ok) {
+                    const adjustedProductionDentistData = await adjustedProductionDentistResponse.json();
+                    if (adjustedProductionDentistData.items && adjustedProductionDentistData.items.length > 0) {
+                        adjustedProductionDentistData.items.forEach(item => {
+                            dashboardDisplay.innerHTML += `<div class="dashboard-item">Adjusted Production by Dentist: ${item.adjusted_production} for Dr. ${item.firstname} ${item.lastname}</div>`;
+                        });
+                    } else {
+                        dashboardDisplay.innerHTML += 'No data available for Adjusted Production by Dentist';
+                    }
+                } else {
+                    dashboardDisplay.innerHTML += 'Failed to retrieve Adjusted Production by Dentist';
+                }
+
+                // Fetch Adjusted Production by Hygienist
+                const adjustedProductionHygienistResponse = await fetch(`https://api.sikkasoft.com/v4/kpis/adjusted_production_by_hygienist?startdate=${startdate}&enddate=${enddate}&practice_id=${practiceId}`, {
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Request-Key': requestKey
+                    }
+                });
+                if (adjustedProductionHygienistResponse.ok) {
+                    const adjustedProductionHygienistData = await adjustedProductionHygienistResponse.json();
+                    if (adjustedProductionHygienistData.items && adjustedProductionHygienistData.items.length > 0) {
+                        adjustedProductionHygienistData.items.forEach(item => {
+                            dashboardDisplay.innerHTML += `<div class="dashboard-item">Adjusted Production by Hygienist: ${item.adjusted_production} for ${item.firstname} ${item.lastname}</div>`;
+                        });
+                    } else {
+                        dashboardDisplay.innerHTML += 'No data available for Adjusted Production by Hygienist';
+                    }
+                } else {
+                    dashboardDisplay.innerHTML += 'Failed to retrieve Adjusted Production by Hygienist';
+                }
+
+                // Fetch Total Collection
+                const totalCollectionResponse = await fetch(`https://api.sikkasoft.com/v4/kpis/total_collection?startdate=${startdate}&enddate=${enddate}&practice_id=${practiceId}`, {
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Request-Key': requestKey
+                    }
+                });
+                if (totalCollectionResponse.ok) {
+                    const totalCollectionData = await totalCollectionResponse.json();
+                    if (totalCollectionData.items && totalCollectionData.items.length > 0) {
+                        const totalCollection = totalCollectionData.items[0].total_collection;
+                        dashboardDisplay.innerHTML += `<div class="dashboard-item">Total Collection: ${Math.abs(totalCollection)}</div>`;
+                    } else {
+                        dashboardDisplay.innerHTML += 'No data available for Total Collection';
+                    }
+                } else {
+                    dashboardDisplay.innerHTML += 'Failed to retrieve Total Collection';
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                dashboardDisplay.innerHTML = 'Error fetching data';
+            }
+        }
+
+        function logout() {
+            sessionStorage.clear();
+            window.location.href = 'Login.html';
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Clinical Performance Metrics</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            align-items: flex-start;
+            height: 100vh;
+            margin: 0;
+            background-color: #eaeef3;
+        }
+        .menu {
+            width: 200px;
+            background-color: #3b3b3b;
+            color: white;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+        }
+        .menu a {
+            color: white;
+            text-decoration: none;
+            margin-bottom: 10px;
+            font-size: 16px;
+        }
+        .menu a:hover {
+            text-decoration: underline;
+        }
+        .content {
+            flex-grow: 1;
+            padding: 20px;
+        }
+        .dashboard-item {
+            background-color: white;
+            border-radius: 5px;
+            padding: 10px;
+            margin-bottom: 10px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        .date-input {
+            padding: 5px;
+            margin-right: 10px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 10px 0;
+        }
+        table, th, td {
+            border: 1px solid #ddd;
+        }
+        th, td {
+            padding: 10px;
+            text-align: left;
+        }
+    </style>
+</head>
+<body>
+    <div class="menu">
+        <a href="Dashboard.html">Dashboard</a>
+        <a href="PatientManagement.html">Patient Management</a>
+        <a href="AppointmentandSchedulingManagement.html">Appointment Management</a>
+        <a href="ClinicalPerformanceMetrics.html">Clinical Metrics</a>
+        <a href="#" onclick="logout()">Logout</a>
+    </div>
+    <div class="content">
+        <h2>Clinical Performance Metrics</h2>
+        <input type="date" id="startdate" class="date-input">
+        <input type="date" id="enddate" class="date-input">
+        <button onclick="getData()">Get Data</button>
+        <div id="clinicalDisplay"></div>
+    </div>
+    <script>
+        const requestKey = sessionStorage.getItem('requestKey');
+        const practiceId = sessionStorage.getItem('selectedPracticeId');
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const startDate = new Date();
+            startDate.setDate(startDate.getDate() - 30);
+            document.getElementById('startdate').value = startDate.toISOString().slice(0, 10);
+            document.getElementById('enddate').value = new Date().toISOString().slice(0, 10);
+            getData();
+        });
+
+        async function getData() {
+            const startdate = document.getElementById('startdate').value;
+            const enddate = document.getElementById('enddate').value;
+            const clinicalDisplay = document.getElementById('clinicalDisplay');
+            clinicalDisplay.innerHTML = '';
+
+            try {
+                const productionByCategoryResponse = await fetch(`https://api.sikkasoft.com/v4/kpis/total_production_by_provider_category?startdate=${startdate}&enddate=${enddate}&practice_id=${practiceId}`, {
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Request-Key': requestKey
+                    }
+                });
+                if (productionByCategoryResponse.ok) {
+                    const productionByCategoryData = await productionByCategoryResponse.json();
+                    if (productionByCategoryData.items && productionByCategoryData.items.length > 0) {
+                        let tableContent = '<table><tr><th>Provider Category</th><th>Total Production</th></tr>';
+                        productionByCategoryData.items.forEach(item => {
+                            tableContent += `<tr><td>${item.category}</td><td>${item.total_production}</td></tr>`;
+                        });
+                        tableContent += '</table>';
+                        clinicalDisplay.innerHTML += tableContent;
+                    } else {
+                        clinicalDisplay.innerHTML += 'No data available for Production By Provider Category';
+                    }
+                } else {
+                    clinicalDisplay.innerHTML = 'Failed to retrieve Production By Provider Category';
+                }
+
+                const productionPerHourResponse = await fetch(`https://api.sikkasoft.com/v4/kpis/provider_total_production_per_hour?startdate=${startdate}&enddate=${enddate}&practice_id=${practiceId}`, {
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Request-Key': requestKey
+                    }
+                });
+                if (productionPerHourResponse.ok) {
+                    const productionPerHourData = await productionPerHourResponse.json();
+                    if (productionPerHourData.items && productionPerHourData.items.length > 0) {
+                        productionPerHourData.items.forEach(item => {
+                            clinicalDisplay.innerHTML += `<div class="dashboard-item">Total Production per Hour: ${item.total_production} for Dr. ${item.firstname} ${item.lastname}</div>`;
+                        });
+                    } else {
+                        clinicalDisplay.innerHTML += 'No data available for Production per Hour by Provider';
+                    }
+                } else {
+                    clinicalDisplay.innerHTML += 'Failed to retrieve Production per Hour by Provider';
+                }
+
+            } catch (error) {
+                console.error('Error:', error);
+                clinicalDisplay.innerHTML = 'Error fetching data';
+            }
+        }
+
+        function logout() {
+            sessionStorage.clear();
+            window.location.href = 'Login.html';
+        }
+    </script>
+</body>
+</html>

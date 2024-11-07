@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard</title>
+    <style>
+        body {
+            display: flex;
+            background-color: #f0f0f5;
+            margin: 0;
+        }
+        .menu {
+            width: 200px;
+            background-color: #333;
+            padding-top: 20px;
+            position: fixed;
+            height: 100%;
+        }
+        .menu a {
+            padding: 8px 16px;
+            text-decoration: none;
+            color: white;
+            display: block;
+        }
+        .menu a:hover {
+            background-color: #575757;
+        }
+        .content {
+            margin-left: 200px;
+            padding: 20px;
+            width: 100%;
+        }
+        .card {
+            background-color: white;
+            padding: 15px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="menu">
+        <a href="Dashboard.html">Dashboard</a>
+        <a href="PatientManagement.html">Patient Management</a>
+        <a href="AppointmentandSchedulingManagement.html">Appointment and Scheduling</a>
+        <a href="ClinicalPerformanceMetrics.html">Clinical Metrics</a>
+        <a href="login.html">Logout</a>
+    </div>
+    <div class="content">
+        <h1>Dashboard</h1>
+        <div class="card">
+            <h3>Total Production</h3>
+            <p id="total-production-amount">Loading...</p>
+        </div>
+        <div class="card">
+            <h3>Adjusted Production By Dentist</h3>
+            <p id="adjusted-production-dentist">Loading...</p>
+        </div>
+        <div class="card">
+            <h3>Adjusted Production by Hygienist</h3>
+            <p id="adjusted-production-hygienist">Loading...</p>
+        </div>
+        <div class="card">
+            <h3>Total Collection</h3>
+            <p id="total-collection-amount">Loading...</p>
+        </div>
+        <input type="date" id="startdate" value=""><input type="date" id="enddate" value="">
+        <button onclick="fetchDashboardData()">Get Data</button>
+    </div>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const today = new Date().toISOString().split('T')[0];
+            const priorDate = new Date();
+            priorDate.setDate(priorDate.getDate() - 30);
+            document.getElementById('enddate').value = today;
+            document.getElementById('startdate').value = priorDate.toISOString().split('T')[0];
+            fetchDashboardData();
+        });
+        function fetchDashboardData() {
+            const requestKey = sessionStorage.getItem('request_key');
+            const practiceId = sessionStorage.getItem('selectedPracticeId');
+            const startdate = document.getElementById('startdate').value;
+            const enddate = document.getElementById('enddate').value;
+            Promise.all([
+                fetchProduction(requestKey, practiceId, startdate, enddate),
+                fetchAdjustedProductionByDentist(requestKey, practiceId, startdate, enddate),
+                fetchAdjustedProductionByHygienist(requestKey, practiceId, startdate, enddate),
+                fetchTotalCollection(requestKey, practiceId, startdate, enddate)
+            ]).catch(error => {
+                console.error("Error fetching data", error);
+            });
+        }
+
+        function fetchProduction(requestKey, practiceId, startdate, enddate) {
+            return fetch(`https://api.sikkasoft.com/v4/kpis/total_production?startdate=${startdate}&enddate=${enddate}&practice_id=${practiceId}`, {
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Request-Key': requestKey
+                }
+            }).then(response => response.json())
+            .then(data => {
+                document.getElementById('total-production-amount').textContent = `$${data.items[0]?.total_production || '0'}`;
+            });
+        }
+
+        function fetchAdjustedProductionByDentist(requestKey, practiceId, startdate, enddate) {
+            return fetch(`https://api.sikkasoft.com/v4/kpis/adjusted_production_by_dentist?startdate=${startdate}&enddate=${enddate}&practice_id=${practiceId}`, {
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Request-Key': requestKey
+                }
+            }).then(response => response.json())
+            .then(data => {
+                const dentistData = data.items.map(item => `${item.firstname} ${item.lastname}: $${item.adjusted_production}`).join(', ');
+                document.getElementById('adjusted-production-dentist').textContent = dentistData || "No data available";
+            });
+        }
+
+        function fetchAdjustedProductionByHygienist(requestKey, practiceId, startdate, enddate) {
+            return fetch(`https://api.sikkasoft.com/v4/kpis/adjusted_production_by_hygienist?startdate=${startdate}&enddate=${enddate}&practice_id=${practiceId}`, {
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Request-Key': requestKey
+                }
+            }).then(response => response.json())
+            .then(data => {
+                const hygienistData = data.items.map(item => `${item.firstname} ${item.lastname}: $${item.adjusted_production}`).join(', ');
+                document.getElementById('adjusted-production-hygienist').textContent = hygienistData || "No data available";
+            });
+        }
+
+        function fetchTotalCollection(requestKey, practiceId, startdate, enddate) {
+            return fetch(`https://api.sikkasoft.com/v4/kpis/total_collection?startdate=${startdate}&enddate=${enddate}&practice_id=${practiceId}`, {
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Request-Key': requestKey
+                }
+            }).then(response => response.json())
+            .then(data => {
+                const totalCollection = data.items[0]?.total_collection || '0';
+                document.getElementById('total-collection-amount').textContent = `$${totalCollection.replace('-', '')}`;
+            });
+        }
+    </script>
+</body>
+</html>

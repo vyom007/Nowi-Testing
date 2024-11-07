@@ -1,0 +1,207 @@
+// File: appointment-management.html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Appointment Management</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f9;
+            display: flex;
+        }
+        .menu {
+            background: #333;
+            height: 100vh;
+            color: white;
+            padding: 20px;
+            width: 200px;
+            box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
+            position: fixed;
+        }
+        .menu a {
+            display: block;
+            padding: 10px;
+            color: white;
+            text-decoration: none;
+            margin: 10px 0;
+        }
+        .menu a:hover {
+            background-color: #575757;
+            border-radius: 5px;
+        }
+        .content {
+            margin-left: 220px;
+            padding: 20px;
+            flex-grow: 1;
+        }
+        .card {
+            background-color: #ffffff;
+            border-radius: 5px;
+            padding: 20px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            margin: 10px 0;
+        }
+        input[type=date] {
+            padding: 10px;
+            margin-right: 10px;
+        }
+        button {
+            background-color: #5cb85c;
+            color: white;
+            padding: 10px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #4cae4c;
+        }
+    </style>
+</head>
+<body>
+    <div class="menu">
+        <a href="dashboard.html">Dashboard</a>
+        <a href="appointment-management.html">Appointment Management</a>
+        <a href="patient-follow-up.html">Patient Follow-Up and Recall</a>
+        <a href="personalized-communication.html">Personalized Patient Communication</a>
+        <a href="index.html">Logout</a>
+    </div>
+    <div class="content">
+        <h2>Appointment Management</h2>
+        <input type="date" id="startdate">
+        <input type="date" id="enddate">
+        <button onclick="loadAppointmentData()">Load Appointments</button>
+        <div id="appointmentCards">
+            <div class="card" id="noShowAppointmentsCard"></div>
+            <div class="card">
+                <table id="appointmentsTable" border="1">
+                    <thead>
+                        <tr>
+                            <th>Patient Name</th>
+                            <th>Date</th>
+                            <th>Amount</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const requestKey = localStorage.getItem('request_key');
+        const practiceId = localStorage.getItem('selected_practice');
+
+        document.addEventListener('DOMContentLoaded', function() {
+            const today = new Date();
+            const yyyy = today.getFullYear();
+            const mm = String(today.getMonth() + 1).padStart(2, '0');
+            const dd = String(today.getDate()).padStart(2, '0');
+            const formattedToday = yyyy + '-' + mm + '-' + dd;
+            const thirtyDaysAgo = new Date(today.setDate(today.getDate() - 30));
+            const formattedThirtyDaysAgo = thirtyDaysAgo.toISOString().split('T')[0];
+
+            document.getElementById('startdate').value = formattedThirtyDaysAgo;
+            document.getElementById('enddate').value = formattedToday;
+
+            loadAppointmentData();
+        });
+
+        function loadAppointmentData() {
+            const startdate = document.getElementById('startdate').value;
+            const enddate = document.getElementById('enddate').value;
+            fetchNoShowAppointments(startdate, enddate);
+            fetchAppointmentDetails(startdate, enddate);
+        }
+
+        function fetchNoShowAppointments(startdate, enddate) {
+            fetch(`https://api.sikkasoft.com/v4/kpis/no_show_appointments?startdate=${startdate}&enddate=${enddate}&practice_id=${practiceId}`, {
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Request-Key': requestKey
+                }
+            })
+            .then(response => {
+                if (response.status === 204) {
+                    return { value: 0 };
+                } else if (!response.ok) {
+                    throw new Error('Network response was not ok.');
+                }
+                return response.json();
+            })
+            .then(data => {
+                const noShowValue = data.items[0]?.value || 0;
+                document.getElementById('noShowAppointmentsCard').innerHTML = `No Show Appointments: <strong>${noShowValue}</strong>`;
+            })
+            .catch(error => console.error('Error:', error));
+        }
+
+        function fetchAppointmentDetails(startdate, enddate) {
+            fetch(`https://api.sikkasoft.com/v4/appointments?startdate=${startdate}&enddate=${enddate}`, {
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Request-Key': requestKey
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                const appointmentsTableBody = document.getElementById('appointmentsTable').getElementsByTagName('tbody')[0];
+                data.items.forEach(appointment => {
+                    const row = appointmentsTableBody.insertRow();
+                    row.insertCell(0).textContent = appointment.patient_name;
+                    row.insertCell(1).textContent = appointment.date;
+                    row.insertCell(2).textContent = appointment.amount;
+                    const actionCell = row.insertCell(3);
+                    const sendNotificationButton = document.createElement('button');
+                    sendNotificationButton.textContent = 'Send Notification';
+                    sendNotificationButton.onclick = () => sendEmailNotification(appointment.patient_id, appointment.date);
+                    actionCell.appendChild(sendNotificationButton);
+                });
+            })
+            .catch(error => console.error('Error:', error));
+        }
+
+        function sendEmailNotification(patientId, appointmentDate) {
+            fetch(`https://api.sikkasoft.com/v4/patients/${patientId}`, {
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Request-Key': requestKey
+                }
+            })
+            .then(response => response.json())
+            .then(patientData => {
+                const patientEmail = patientData.items[0].email;
+                // Logic to send email using SendGrid
+                fetch('https://api.sendgrid.com/v3/mail/send', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': 'Bearer YOUR_SENDGRID_API_KEY',
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        "personalizations": [{
+                            "to": [{ "email": patientEmail }],
+                            "subject": "Appointment Reminder"
+                        }],
+                        "from": { "email": "no-reply@example.com" },
+                        "content": [{
+                            "type": "text/plain",
+                            "value": `This is a reminder for your appointment on ${appointmentDate}.`
+                        }]
+                    })
+                })
+                .then(response => {
+                    if (!response.ok) throw new Error('Failed to send email');
+                    alert('Notification Sent!');
+                })
+                .catch(error => console.error('Error:', error));
+            })
+            .catch(error => console.error('Error:', error));
+        }
+    </script>
+</body>
+</html>

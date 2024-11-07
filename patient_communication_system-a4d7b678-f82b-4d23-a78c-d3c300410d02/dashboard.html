@@ -1,0 +1,179 @@
+// File: dashboard.html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f9;
+            display: flex;
+        }
+        .menu {
+            background: #333;
+            height: 100vh;
+            color: white;
+            padding: 20px;
+            width: 200px;
+            box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
+            position: fixed;
+        }
+        .menu a {
+            display: block;
+            padding: 10px;
+            color: white;
+            text-decoration: none;
+            margin: 10px 0;
+        }
+        .menu a:hover {
+            background-color: #575757;
+            border-radius: 5px;
+        }
+        .content {
+            margin-left: 220px;
+            padding: 20px;
+            flex-grow: 1;
+        }
+        .card {
+            background-color: #ffffff;
+            border-radius: 5px;
+            padding: 20px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            margin: 10px 0;
+        }
+        input[type=date] {
+            padding: 10px;
+            margin-right: 10px;
+        }
+        button {
+            background-color: #5cb85c;
+            color: white;
+            padding: 10px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #4cae4c;
+        }
+    </style>
+</head>
+<body>
+    <div class="menu">
+        <a href="dashboard.html">Dashboard</a>
+        <a href="appointment-management.html">Appointment Management</a>
+        <a href="patient-follow-up.html">Patient Follow-Up and Recall</a>
+        <a href="personalized-communication.html">Personalized Patient Communication</a>
+        <a href="index.html">Logout</a>
+    </div>
+    <div class="content">
+        <h2>Dashboard</h2>
+        <input type="date" id="startdate">
+        <input type="date" id="enddate">
+        <button onclick="loadDashboardData()">Get Data</button>
+        <div id="dashboardCards">
+            <div class="card" id="activePatientsCard"></div>
+            <div class="card" id="patientsSeenCard"></div>
+            <div class="card" id="newPatientsCard"></div>
+            <div class="card">Recent Reviews: <strong id="recentReviews">123</strong></div>
+            <div class="card">Review Statistics: Avg Rating and Trends</div>
+            <div class="card">Review Request Status</div>
+        </div>
+    </div>
+
+    <script>
+        const requestKey = localStorage.getItem('request_key');
+        const practiceId = localStorage.getItem('selected_practice');
+
+        document.addEventListener('DOMContentLoaded', function() {
+            const today = new Date();
+            const yyyy = today.getFullYear();
+            const mm = String(today.getMonth() + 1).padStart(2, '0');
+            const dd = String(today.getDate()).padStart(2, '0');
+            const formattedToday = yyyy + '-' + mm + '-' + dd;
+
+            document.getElementById('startdate').value = formattedToday;
+            document.getElementById('enddate').value = formattedToday;
+
+            loadDashboardData();
+        });
+
+        function loadDashboardData() {
+            const startdate = document.getElementById('startdate').value;
+            const enddate = document.getElementById('enddate').value;
+            fetchActivePatients();
+            fetchPatientsSeen(startdate, enddate);
+            fetchNewPatients(startdate, enddate);
+        }
+
+        function fetchActivePatients() {
+            fetch(`https://api.sikkasoft.com/v4/kpis/active_patients?practice_id=${practiceId}`, {
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Request-Key': requestKey
+                }
+            })
+            .then(response => {
+                if (response.status === 204) {
+                    return 0;
+                } else if (!response.ok) {
+                    throw new Error('Network response was not ok.');
+                }
+                return response.json();
+            })
+            .then(data => {
+                const totalActivePatients = data.items[0]?.active_patients || 0;
+                document.getElementById('activePatientsCard').innerHTML = `Active Patients: <strong>${totalActivePatients}</strong>`;
+            })
+            .catch(error => console.error('Error:', error));
+        }
+
+        function fetchPatientsSeen(startdate, enddate) {
+            fetch(`https://api.sikkasoft.com/v4/kpis/number_of_patients_seen?startdate=${startdate}&enddate=${enddate}&practice_id=${practiceId}`, {
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Request-Key': requestKey
+                }
+            })
+            .then(response => {
+                if (response.status === 204) {
+                    return 0;
+                } else if (!response.ok) {
+                    throw new Error('Network response was not ok.');
+                }
+                return response.json();
+            })
+            .then(data => {
+                const totalPatientsSeen = data.items[0]?.total_patients || 0;
+                document.getElementById('patientsSeenCard').innerHTML = `Patients Seen: <strong>${totalPatientsSeen}</strong>`;
+            })
+            .catch(error => console.error('Error:', error));
+        }
+
+        function fetchNewPatients(startdate, enddate) {
+            fetch(`https://api.sikkasoft.com/v4/kpis/new_patients?startdate=${startdate}&enddate=${enddate}&practice_id=${practiceId}`, {
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Request-Key': requestKey
+                }
+            })
+            .then(response => {
+                if (response.status === 204) {
+                    return 0;
+                } else if (!response.ok) {
+                    throw new Error('Network response was not ok.');
+                }
+                return response.json();
+            })
+            .then(data => {
+                const newPatients = data.items[0]?.new_patients || 0;
+                document.getElementById('newPatientsCard').innerHTML = `New Patients: <strong>${newPatients}</strong>`;
+            })
+            .catch(error => console.error('Error:', error));
+        }
+    </script>
+</body>
+</html>

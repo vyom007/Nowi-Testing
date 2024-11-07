@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Follow-Up Management</title>
+    <style>
+        body {
+            margin: 0;
+            display: flex;
+        }
+        .menu {
+            width: 200px;
+            background-color: #343a40;
+            color: white;
+            height: 100vh;
+            position: fixed;
+        }
+        .menu ul {
+            list-style-type: none;
+            padding: 0;
+        }
+        .menu ul li {
+            padding: 15px;
+            text-align: center;
+            cursor: pointer;
+        }
+        .menu ul li:hover {
+            background-color: #495057;
+        }
+        .content {
+            margin-left: 200px;
+            padding: 20px;
+        }
+        .card {
+            background-color: white;
+            border-radius: 8px;
+            padding: 20px;
+            margin-top: 20px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        th, td {
+            padding: 15px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+    </style>
+</head>
+<body>
+<div class="menu">
+    <ul>
+        <li>Dashboard</li>
+        <li>Appointment Management</li>
+        <li>Patient Follow-Up and Recall</li>
+        <li>Personalized Patient Communication</li>
+        <li>Logout</li>
+    </ul>
+</div>
+<div class="content">
+    <h1>Patient Follow-Up and Recall</h1>
+    <input type="date" id="startdate" value="2023-01-01">
+    <input type="date" id="enddate" value="2023-01-31">
+    <button onclick="loadFollowUpData()">Get Data</button>
+    <div class="card">
+        <h2>Recare Services Not Scheduled Future Appointment</h2>
+        <table id="recare-not-scheduled-table">
+            <thead>
+            <tr>
+                <th>Name</th>
+                <th>Procedure Date</th>
+                <th>Amount</th>
+            </tr>
+            </thead>
+            <tbody>
+            <!-- Data will be inserted here -->
+            </tbody>
+        </table>
+    </div>
+    <div class="card">
+        <h2>Patients Who Have Received Recare Services</h2>
+        <table id="recare-received-table">
+            <thead>
+            <tr>
+                <th>Name</th>
+                <th>Procedure Date</th>
+                <th>Email</th>
+            </tr>
+            </thead>
+            <tbody>
+            <!-- Data will be inserted here -->
+            </tbody>
+        </table>
+    </div>
+</div>
+<script>
+    const request_key = localStorage.getItem('request_key');
+    const practice_id = localStorage.getItem('selected_practice');
+
+    function loadRecareNotScheduled() {
+        const startdate = document.getElementById('startdate').value;
+        const enddate = document.getElementById('enddate').value;
+
+        fetch(`https://api.sikkasoft.com/v4/kpis/recare_services_not_schedule_future_appointment_details?practice_id=${practice_id}&startdate=${startdate}&enddate=${enddate}`, {
+            headers: {
+                'Content-Type': 'application/json',
+                'Request-Key': request_key
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            const table = document.getElementById('recare-not-scheduled-table').getElementsByTagName('tbody')[0];
+            table.innerHTML = '';
+            data.items.forEach(item => {
+                const row = table.insertRow();
+                row.insertCell(0).textContent = `${item.firstname} ${item.lastname}`;
+                row.insertCell(1).textContent = item.procedure_date;
+                row.insertCell(2).textContent = item.amount;
+            });
+        })
+        .catch(error => {
+            console.error('Error:', error);
+        });
+    }
+
+    function loadRecareReceived() {
+        const startdate = document.getElementById('startdate').value;
+        const enddate = document.getElementById('enddate').value;
+
+        fetch(`https://api.sikkasoft.com/v4/kpis/recare_services_details?practice_id=${practice_id}&startdate=${startdate}&enddate=${enddate}`, {
+            headers: {
+                'Content-Type': 'application/json',
+                'Request-Key': request_key
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            const table = document.getElementById('recare-received-table').getElementsByTagName('tbody')[0];
+            table.innerHTML = '';
+            data.items.forEach(item => {
+                const row = table.insertRow();
+                row.insertCell(0).textContent = `${item.firstname} ${item.lastname}`;
+                row.insertCell(1).textContent = item.procedure_date;
+                row.insertCell(2).textContent = item.email;
+            });
+        })
+        .catch(error => {
+            console.error('Error:', error);
+        });
+    }
+
+    function loadFollowUpData() {
+        loadRecareNotScheduled();
+        loadRecareReceived();
+    }
+
+</script>
+</body>
+</html>

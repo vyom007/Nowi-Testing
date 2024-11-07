@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Select Practice</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f0f2f5;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+        .practice-container {
+            background-color: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 0 20px rgba(0,0,0,0.1);
+            width: 350px;
+            text-align: center;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            padding: 10px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            width: 100%;
+            margin-top: 10px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+    </style>
+</head>
+<body>
+
+<div class="practice-container">
+    <h2>Select Practice</h2>
+    <select id="select-practice"></select>
+    <button onclick="selectPractice()">Select</button>
+</div>
+
+<script>
+    const request_key = localStorage.getItem('request_key');
+
+    function loadPractices() {
+        fetch('https://api.sikkasoft.com/v4/practices', {
+            headers: {
+                'Content-Type': 'application/json',
+                'Request-Key': request_key
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            const select = document.getElementById('select-practice');
+            data.items.forEach(practice => {
+                const option = document.createElement('option');
+                option.value = practice.practice_id;
+                option.text = practice.name;
+                select.appendChild(option);
+            });
+        })
+        .catch(error => {
+            console.error('Error:', error);
+        });
+    }
+
+    function selectPractice() {
+        const selectedPractice = document.getElementById('select-practice').value;
+        localStorage.setItem('selected_practice', selectedPractice);
+        window.location.href = 'dashboard.html';
+    }
+
+    loadPractices();
+</script>
+
+</body>
+</html>

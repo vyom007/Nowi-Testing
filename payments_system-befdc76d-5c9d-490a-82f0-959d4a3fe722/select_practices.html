@@ -1,0 +1,57 @@
+<html>
+<head>
+    <title>Select Practice</title>
+    <style>
+        body { background-color: #f2f2f2; font-family: Arial, sans-serif; }
+        .practice-container { width: 500px; margin: 100px auto; padding: 20px; background-color: #fff; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+        select { width: 100%; padding: 10px; margin: 5px 0 10px 0; border: 1px solid #ccc; border-radius: 4px; }
+        button { background-color: #4CAF50; color: white; padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer; width: 100%; }
+        button:hover { background-color: #45a049; }
+        .error { color: red; }
+    </style>
+</head>
+<body>
+    <div class="practice-container">
+        <h2>Select Practice</h2>
+        <select id="practices">
+            <option value="">Select a Practice</option>
+        </select>
+        <button onclick="choosePractice()">Continue</button>
+        <p id="error" class="error"></p>
+    </div>
+
+    <script>
+        const request_key = sessionStorage.getItem('request_key');
+
+        window.onload = function() {
+            fetch('https://api.sikkasoft.com/v4/practices', {
+                method: 'GET',
+                headers: { 'Content-Type': 'application/json', 'Request-Key': request_key }
+            })
+            .then(response => response.json())
+            .then(data => {
+                const select = document.getElementById('practices');
+                data.items.forEach(practice => {
+                    const option = document.createElement('option');
+                    option.value = practice.practice_id;
+                    option.text = practice.name;
+                    select.add(option);
+                });
+            })
+            .catch(error => {
+                document.getElementById('error').innerText = 'Error retrieving practices';
+            });
+        }
+
+        function choosePractice() {
+            const practice = document.getElementById('practices').value;
+            if (practice) {
+                sessionStorage.setItem('selected_practice', practice);
+                window.location.href = 'dashboard.html';
+            } else {
+                document.getElementById('error').innerText = 'Please select a practice';
+            }
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Requested Reviews</title>
+    <style>
+        body { display: flex; }
+        nav { width: 200px; background-color: #007bff; color: white; padding: 15px; height: 100vh; }
+        nav ul { list-style-type: none; padding: 0; }
+        nav li { margin: 20px 0; }
+        nav a { color: white; text-decoration: none; }
+        .content { padding: 20px; flex-grow: 1; background-color: #f4f4f9; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { border: 1px solid #ddd; padding: 8px; }
+        th { background: #f3f3f3; }
+    </style>
+    <script>
+        function loadRequestedReviews() {
+            const table = document.getElementById('reviews-table');
+            fetch('reviewRequested.csv')
+                .then(response => {
+                    if (response.status === 200) {
+                        return response.text().then(text => {
+                            const rows = text.split('\n').filter(row => row);
+                            table.innerHTML = '<tr><th>Patient ID</th><th>Request Date</th></tr>';
+                            rows.forEach(row => {
+                                const cols = row.split(',');
+                                const tr = document.createElement('tr');
+                                tr.innerHTML = `<td>${cols[0]}</td><td>${cols[1]}</td>`;
+                                table.appendChild(tr);
+                            });
+                        });
+                    } else {
+                        table.innerHTML = '<tr><td colspan="2">No data</td></tr>';
+                    }
+                })
+                .catch(() => {
+                    table.innerHTML = '<tr><td colspan="2">Failed to load data</td></tr>';
+                });
+        }
+
+        window.onload = loadRequestedReviews;
+    </script>
+</head>
+<body>
+    <nav>
+        <ul>
+            <li><a href="dashboard.html">Dashboard</a></li>
+            <li><a href="appointments.html">Appointments</a></li>
+            <li><a href="#">Requested Reviews</a></li>
+            <li><a href="past_transactions.html">Past Transactions</a></li>
+            <li><a href="login.html">Logout</a></li>
+        </ul>
+    </nav>
+    <div class="content">
+        <h1>Requested Reviews</h1>
+        <table id="reviews-table"></table>
+    </div>
+</body>
+</html>

@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Appointments</title>
+    <style>
+        body { display: flex; }
+        nav { width: 200px; background-color: #007bff; color: white; padding: 15px; height: 100vh; }
+        nav ul { list-style-type: none; padding: 0; }
+        nav li { margin: 20px 0; }
+        nav a { color: white; text-decoration: none; }
+        .content { padding: 20px; flex-grow: 1; background-color: #f4f4f9; }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { border: 1px solid #ddd; padding: 8px; }
+        th { background: #f3f3f3; }
+        .actions button { background-color: #007bff; color: white; border: none; padding: 5px 10px; cursor: pointer; border-radius: 4px; }
+    </style>
+    <script>
+        const fetchAppointments = async () => {
+            const request_key = sessionStorage.getItem('request_key');
+            const practice_id = sessionStorage.getItem('selected_practice_id');
+            const startdate = new Date(new Date().setDate(new Date().getDate() - 30)).toISOString().split('T')[0];
+            const enddate = new Date().toISOString().split('T')[0];
+
+            try {
+                const response = await fetch(`https://api.sikkasoft.com/v4/appointments?startdate=${startdate}&enddate=${enddate}&practice_id=${practice_id}`, {
+                    method: 'GET',
+                    headers: {'Content-Type': 'application/json', 'Request-Key': request_key}
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    displayAppointments(data.items);
+                } else {
+                    alert('Failed to fetch appointments');
+                }
+            } catch (error) {
+                alert('An error occurred');
+            }
+        };
+
+        const displayAppointments = (appointments) => {
+            const table = document.getElementById('appointments-table');
+            table.innerHTML = '<tr><th>Patient Name</th><th>Guarantor Name</th><th>Amount</th><th>Actions</th></tr>';
+            appointments.forEach(appt => {
+                const row = table.insertRow();
+                row.insertCell(0).textContent = appt.patient_name;
+                row.insertCell(1).textContent = appt.guarantor_name;
+                row.insertCell(2).textContent = appt.amount;
+                const actionsCell = row.insertCell(3);
+                const reviewButton = document.createElement('button');
+                reviewButton.textContent = 'Send Review Request';
+                reviewButton.onclick = () => sendReviewRequest(appt.patient_id);
+                actionsCell.appendChild(reviewButton);
+            });
+        };
+
+        const sendReviewRequest = async (patient_id) => {
+            const response = await fetch(`https://api.sikkasoft.com/v4/patients/${patient_id}?fields=get_all`, {
+                method: 'GET',
+                headers: {'Content-Type': 'application/json', 'Request-Key': sessionStorage.getItem('request_key')}
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                // Send email using SendGrid (pseudo-code, replace with actual code)
+                const patientEmail = data.items[0].email;
+                sendEmailUsingSendGrid(patientEmail, `Review link here`);
+                // Log and save review request here
+            } else {
+                alert('Failed to fetch patient details');
+            }
+        };
+
+        const sendEmailUsingSendGrid = (toEmail, url) => {
+            // Implement send email with SendGrid
+        };
+
+        window.onload = fetchAppointments;
+    </script>
+</head>
+<body>
+    <nav>
+        <ul>
+            <li><a href="dashboard.html">Dashboard</a></li>
+            <li><a href="#">Appointments</a></li>
+            <li><a href="requested_reviews.html">Requested Reviews</a></li>
+            <li><a href="past_transactions.html">Past Transactions</a></li>
+            <li><a href="login.html">Logout</a></li>
+        </ul>
+    </nav>
+    <div class="content">
+        <h1>Appointments</h1>
+        <table id="appointments-table"></table>
+    </div>
+</body>
+</html>

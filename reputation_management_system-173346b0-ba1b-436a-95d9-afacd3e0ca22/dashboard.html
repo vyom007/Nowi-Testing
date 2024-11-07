@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard</title>
+    <style>
+        body {font-family: Arial, sans-serif; display: flex; }
+        .menu {width: 200px; background-color: #333; color: white; padding: 20px; height: 100vh; box-sizing: border-box;}
+        .menu a {color: white; text-decoration: none; display: block; padding: 10px; margin-bottom: 10px;}
+        .menu a:hover {background-color: #575757;}
+        .content {padding: 20px; flex-grow: 1;}
+        .card {background-color: #fff; padding: 20px; border-radius: 10px; box-shadow: 0 0 10px rgba(0, 0, 0, 0.1); margin-bottom: 20px;}
+        h2 {margin-top: 0;}
+    </style>
+</head>
+<body>
+
+    <div class="menu">
+        <a href="#">Dashboard</a>
+        <a href="appointments.html">Appointments</a>
+        <a href="#">Requested Payments</a>
+        <a href="#">Past Transactions</a>
+        <a href="index.html">Logout</a>
+    </div>
+
+    <div class="content">
+        <h2>Dashboard</h2>
+        <div class="card">
+            <h3>Total Review Received</h3>
+            <p>140</p>
+        </div>
+        <div class="card">
+            <h3>Average Review Score</h3>
+            <p>4.5</p>
+        </div>
+        <div class="card">
+            <h3>New Reviews this Month</h3>
+            <p>20</p>
+        </div>
+        <div class="card">
+            <h3>Invites Sent this Month</h3>
+            <p>50</p>
+        </div>
+    </div>
+
+</body>
+</html>

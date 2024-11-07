@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Requested Reviews</title>
+    <style>
+        body {font-family: Arial, sans-serif; display: flex; }
+        .menu {width: 200px; background-color: #333; color: white; padding: 20px; height: 100vh; box-sizing: border-box;}
+        .menu a {color: white; text-decoration: none; display: block; padding: 10px; margin-bottom: 10px;}
+        .menu a:hover {background-color: #575757;}
+        .content {padding: 20px; flex-grow: 1;}
+        table {width: 100%; border-collapse: collapse; margin-bottom: 20px;}
+        table, th, td {border: 1px solid #ddd; padding: 10px; text-align: left;}
+        th {background-color: #f4f4f9;}
+    </style>
+</head>
+<body>
+
+    <div class="menu">
+        <a href="dashboard.html">Dashboard</a>
+        <a href="appointments.html">Appointments</a>
+        <a href="#">Requested Payments</a>
+        <a href="#">Past Transactions</a>
+        <a href="index.html">Logout</a>
+    </div>
+
+    <div class="content">
+        <h2>Requested Reviews</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Patient Name</th>
+                    <th>Email</th>
+                    <th>Review Link</th>
+                </tr>
+            </thead>
+            <tbody id="requestedReviewsBody">
+                <!-- Data will be populated here via JavaScript -->
+            </tbody>
+        </table>
+    </div>
+
+    <script>
+        function loadRequestedReviews() {
+            fetch('reviewRequested.csv')
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('No Data Available');
+                    }
+                    return response.text();
+                })
+                .then(data => {
+                    const rows = data.split('\n');
+                    const tableBody = document.getElementById('requestedReviewsBody');
+                    tableBody.innerHTML = '';
+                    rows.forEach(row => {
+                        const cols = row.split(',');
+                        if (cols.length > 1) {
+                            const tableRow = `<tr>
+                                <td>${cols[0]}</td>
+                                <td>${cols[1]}</td>
+                                <td><a href="#">Review Link</a></td>
+                            </tr>`;
+                            tableBody.insertAdjacentHTML('beforeend', tableRow);
+                        }
+                    });
+                })
+                .catch(error => {
+                    const tableBody = document.getElementById('requestedReviewsBody');
+                    tableBody.innerHTML = `<tr><td colspan="3">${error.message}</td></tr>`;
+                });
+        }
+
+        window.onload = loadRequestedReviews;
+    </script>
+
+</body>
+</html>

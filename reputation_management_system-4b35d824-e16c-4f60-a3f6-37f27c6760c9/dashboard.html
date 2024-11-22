@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard</title>
+    <style>
+        .menu {
+            width: 200px;
+            float: left;
+            background-color: #007BFF;
+            color: white;
+            height: 100vh;
+            padding-top: 20px;
+        }
+        .menu a {
+            display: block;
+            padding: 10px;
+            color: white;
+            text-decoration: none;
+        }
+        .menu a:hover {
+            background-color: #0056b3;
+        }
+        .content {
+            margin-left: 220px;
+            padding: 20px;
+        }
+        .stat-card {
+            background: #f9f9f9;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+    </style>
+</head>
+<body>
+    <div class="menu">
+        <a href="dashboard.html">Dashboard</a>
+        <a href="appointments.html">Appointments</a>
+        <a href="requestedReviews.html">Requested Payments</a>
+        <a href="#">Past Transactions</a>
+        <a href="login.html">Logout</a>
+    </div>
+    <div class="content">
+        <div class="stat-card">
+            <h3>Total Reviews Received</h3>
+            <p id="totalReviews">123</p>
+        </div>
+        <div class="stat-card">
+            <h3>Average Review Score</h3>
+            <p id="avgReviewScore">4.5</p>
+        </div>
+        <div class="stat-card">
+            <h3>New Reviews This Month</h3>
+            <p id="newReviews">15</p>
+        </div>
+        <div class="stat-card">
+            <h3>Invites Sent This Month</h3>
+            <p id="invitesSent">30</p>
+        </div>
+    </div>
+</body>
+</html>
